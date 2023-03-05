@@ -629,7 +629,7 @@ set_output_delay -clock $fwclk -min $bfe_skew                        [get_ports 
         
         
         
-        
+      Your (caccolillo_) new password is: 2S10-SMM8M4-CDP3  
         
         
         
