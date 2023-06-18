@@ -1183,5 +1183,364 @@ begin
 end str_arch;
 
 
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+python train
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
 
+
+
+
+
+
+
+#https://www.tensorflow.org/tutorials/images/cnn
+#https://www.kaggle.com/code/vishwasgpai/guide-for-creating-cnn-model-using-csv-file
+#https://raw.githubusercontent.com/umbertogriffo/Fashion-mnist-cnn-keras/master/Dataset/fashion-mnist_test.csv
+
+
+#https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=runfile_local
+
+
+# This Python 3 environment comes with many helpful anal,ytics libraries installed
+# It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load in 
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import Flatten
+from keras.layers.convolutional import Convolution2D
+from keras.layers.convolutional import MaxPooling2D
+from sklearn.preprocessing import LabelEncoder,OneHotEncoder
+from keras import backend as K
+from sklearn.model_selection import train_test_split
+
+
+import tensorflow as tf
+from matplotlib import pyplot as plt
+from tensorflow.keras import datasets, layers, models
+import matplotlib.pyplot as plt
+import os
+
+# Input data files are available in the "../input/" directory.
+# For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
+
+from subprocess import check_output
+
+# Any results you write to the current directory are saved as output.
+
+
+#name of the file to open
+csv_path = os.path.dirname(os.path.abspath(__file__)) + '/dataset_small.csv'
+print(csv_path)
+
+
+# Read the dataset files
+dataset = pd.read_csv(csv_path).values
+
+#gets the data and reshapes it
+x = dataset[:, 1:].reshape(dataset.shape[0],1, 1024, 2).astype( 'float32' )
+#gets the labels for the data value
+y = dataset[:,0]
+#split the dataset in training and test set
+X_train, testX, y_train, y_test = train_test_split(x, y,test_size = 0.5,random_state = 1)
+
+
+
+
+#print an element of the data
+print(testX[1,0])
+print(testX[1,0].size)
+print(testX[1,0].shape)
+print(y_test[1])
+
+from sklearn import preprocessing
+lb = preprocessing.LabelBinarizer()
+y_train = lb.fit_transform(y_train)
+y_test = lb.fit_transform(y_test)
+
+#build the CNN model
+
+
+model = models.Sequential()
+model.add(layers.Conv2D(1, (1, 1), activation='relu', input_shape=(1, 1024, 2), padding='same'))
+model.add(layers.MaxPooling2D((1, 1)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D((1, 1)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D((1, 32)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D((1, 1)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.Flatten())
+#model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(32, activation='relu'))
+model.add(layers.Dense(16, activation='relu'))
+model.add(Dropout(0.1))
+model.add(layers.Dense(3))
+model.summary()
+
+
+#Compile the model
+model.compile(optimizer='adam',loss=tf.keras.losses.BinaryCrossentropy(),metrics=['accuracy'])
+
+
+#Train the model
+num_epochs = 10
+history = model.fit(X_train, y_train, epochs=num_epochs,verbose=1,validation_data=(testX, y_test))
+
+
+
+# list all data in history
+print(history.history.keys())
+print(history.params)
+
+print(history)
+
+#plot trained model accuracy
+acc=(history.history['accuracy'])
+print(acc)
+val_acc=(history.history['val_accuracy'])
+plt.plot(acc)
+plt.plot(val_acc)
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.show()
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.show()
+
+pd.DataFrame(history.history).plot(figsize=(8,5))
+plt.show()
+#Evaluate the model
+
+test_loss, test_acc = model.evaluate(testX, y_test, verbose=2)
+print('Test loss:', test_loss)
+print('Test accuracy:', test_acc)
+
+
+
+#save the trained model
+model_path = os.path.dirname(os.path.abspath(__file__)) + '/model.h5'
+model.save(model_path)
+print("Saved model to disk")
+
+# serialize weights to HDF5
+weights_path = os.path.dirname(os.path.abspath(__file__)) + '/weights.h5'
+model.save_weights(weights_path)
+print("Saved weights to disk")
+
+
+
+
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+matlab generate data
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+=============================================================================================================================================================
+
+
+
+
+
+
+
+clc
+clear all
+close all
+
+modulationTypes = categorical(["B-FM", "DSB-AM", "SSB-AM"]);
+numFramesPerModType = 10000;
+sps = 8;                % Samples per symbol
+spf = 1024;             % Samples per frame
+symbolsPerFrame = spf / sps;
+fs = 200e3;             % Sample rate
+fc = [902e6 100e6];     % Center frequencies
+
+% Set the random number generator to a known state to be able to regenerate
+% the same frames every time the simulation is run
+rng(123456)
+% Random bits
+d = randi([0 3], 1024, 1);
+% PAM4 modulation
+syms = pammod(d,4);
+% Square-root raised cosine filter
+filterCoeffs = rcosdesign(0.35,4,8);
+tx = filter(filterCoeffs,1,upsample(syms,8));
+
+% Channel
+SNR = 30;
+maxOffset = 5;
+fc = 902e6;
+fs = 200e3;
+multipathChannel = comm.RicianChannel(...
+  'SampleRate', fs, ...
+  'PathDelays', [0 1.8 3.4] / 200e3, ...
+  'AveragePathGains', [0 -2 -10], ...
+  'KFactor', 4, ...
+  'MaximumDopplerShift', 4);
+
+frequencyShifter = comm.PhaseFrequencyOffset(...
+  'SampleRate', fs);
+
+% Apply an independent multipath channel
+reset(multipathChannel)
+outMultipathChan = multipathChannel(tx);
+
+% Determine clock offset factor
+clockOffset = (rand() * 2*maxOffset) - maxOffset;
+C = 1 + clockOffset / 1e6;
+
+% Add frequency offset
+frequencyShifter.FrequencyOffset = -(C-1)*fc;
+outFreqShifter = frequencyShifter(outMultipathChan);
+
+% Add sampling time drift
+t = (0:length(tx)-1)' / fs;
+newFs = fs * C;
+tp = (0:length(tx)-1)' / newFs;
+outTimeDrift = interp1(t, outFreqShifter, tp);
+
+% Add noise
+rx = awgn(outTimeDrift,SNR,0);
+
+% Frame generation for classification
+unknownFrames = helperModClassGetNNFrames(rx);
+
+maxDeltaOff = 5;
+deltaOff = (rand()*2*maxDeltaOff) - maxDeltaOff;
+C = 1 + (deltaOff/1e6);
+
+channel = helperModClassTestChannel(...
+  'SampleRate', fs, ...
+  'SNR', SNR, ...
+  'PathDelays', [0 1.8 3.4] / fs, ...
+  'AveragePathGains', [0 -2 -10], ...
+  'KFactor', 4, ...
+  'MaximumDopplerShift', 4, ...
+  'MaximumClockOffset', 5, ...
+  'CenterFrequency', 902e6)
+
+chInfo = info(channel)
+
+% Set the random number generator to a known state to be able to regenerate
+% the same frames every time the simulation is run
+rng(1235)
+tic
+
+numModulationTypes = length(modulationTypes);
+
+channelInfo = info(channel);
+transDelay = 50;
+dataDirectory = fullfile(tempdir,"ModClassDataFiles");
+disp("Data file directory is " + dataDirectory)
+
+fileNameRoot = "frame";
+
+% Check if data files exist
+dataFilesExist = false;
+if exist(dataDirectory,'dir')
+  files = dir(fullfile(dataDirectory,sprintf("%s*",fileNameRoot)));
+  if length(files) == numModulationTypes*numFramesPerModType
+    dataFilesExist = true;
+  end
+end
+
+if ~dataFilesExist
+  disp("Generating data and saving in data files...")
+  [success,msg,msgID] = mkdir(dataDirectory);
+  if ~success
+    error(msgID,msg)
+  end
+  names='"labels",';
+  pre='I_';
+  for k=0:1023
+    names = strcat(names,'"',pre,num2str(k),'",');
+  end
+  pre='Q_';
+  for k=0:1022
+    names = strcat(names,'"',pre,num2str(k),'",');
+  end
+  k=k+1;
+  names = strcat(names,'"',pre,num2str(k),'"');
+  singlename='dataset.csv';
+  fileIDfull = fopen(singlename,'w');
+  fprintf(fileIDfull,'%s \n',names);
+  for modType = 1:numModulationTypes
+    elapsedTime = seconds(toc);
+    elapsedTime.Format = 'hh:mm:ss';
+    fprintf('%s - Generating %s frames\n', ...
+      elapsedTime, modulationTypes(modType))
+    
+    label = modulationTypes(modType);
+    numSymbols = (numFramesPerModType / sps);
+    %create the modulated data
+    dataSrc = helperModClassGetSource(modulationTypes(modType), sps, 2*spf, fs);
+    modulator = helperModClassGetModulator(modulationTypes(modType), sps, fs);
+    if contains(char(modulationTypes(modType)), {'B-FM','DSB-AM','SSB-AM'})
+      % Analog modulation types use a center frequency of 100 MHz
+      channel.CenterFrequency = 100e6;
+    else
+      % Digital modulation types use a center frequency of 902 MHz
+      channel.CenterFrequency = 902e6;
+    end
+    
+    for p=1:numFramesPerModType
+      % Generate random data
+      x = dataSrc();
       
+      % Modulate
+      y = modulator(x);
+      
+      % Pass through independent channels
+      rxSamples = channel(y);
+      
+      % Remove transients from the beginning, trim to size, and normalize
+      frame = helperModClassFrameGenerator(rxSamples, spf, spf, transDelay, sps);
+      
+      % Save data file
+      fileName = fullfile(dataDirectory,sprintf("%s%s%03d",fileNameRoot,modulationTypes(modType),p));
+      fileName = strcat(fileName,'.csv');      
+      real_part_frame=real(frame)';
+      imag_part_frame=imag(frame)';
+      fileID = fopen(fileName,'w');
+      data=horzcat(real_part_frame,imag_part_frame);
+      fprintf(fileID,'%s \n',names);
+      fprintf(fileID,'%d,',(modType-1));
+      fprintf(fileID,'%d,',data(1:2047));
+      fprintf(fileID,'%d',data(2048));
+      fclose(fileID);
+      fprintf(fileIDfull,'%d,',(modType-1));
+      fprintf(fileIDfull,'%d,',data(1:2047));
+      fprintf(fileIDfull,'%d \n',data(2048));
+    end
+  end
+  fclose(fileIDfull);
+else
+  disp("Data files exist. Skip data generation.")
+end
+
+
+
+
+
+
+
